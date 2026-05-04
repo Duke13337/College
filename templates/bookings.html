@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Заявки на бронирование</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+</head>
+<body class="page-college">
+    <header class="site-header site-header--compact">
+        <a href="/" class="brand">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span class="brand-text">EduSpace</span>
+        </a>
+        <div class="header-college-title">Заявки на бронирование</div>
+        <div class="header-actions">
+            <span class="nav-user">{{ user.name }}{% if is_admin %} · админ{% endif %}</span>
+            <a href="/" class="nav-cta nav-cta--ghost">На главную</a>
+            <a href="/logout" class="nav-cta nav-cta--ghost">Выйти</a>
+        </div>
+    </header>
+
+    <main class="college-main">
+        {% if notice == 'cancelled' %}
+        <p class="banner-notice banner-notice--ok">Заявка отменена. Статус аудитории обновлён, если не было других подтверждённых броней.</p>
+        {% elif notice == 'confirmed' %}
+        <p class="banner-notice banner-notice--ok">Заявка подтверждена. Аудитория отмечена как занятая (по активным подтверждённым броням).</p>
+        {% endif %}
+        {% if error == 'forbidden' %}
+        <p class="banner-notice banner-notice--err">Недостаточно прав.</p>
+        {% elif error == 'not_found' %}
+        <p class="banner-notice banner-notice--err">Заявка не найдена.</p>
+        {% elif error == 'overlap' %}
+        <p class="banner-notice banner-notice--err">Интервал пересекается с другой неотменённой заявкой по этой аудитории.</p>
+        {% elif error == 'bad_state' %}
+        <p class="banner-notice banner-notice--err">Подтвердить можно только заявку в статусе «на рассмотрении».</p>
+        {% elif error == 'room_maintenance' %}
+        <p class="banner-notice banner-notice--err">Аудитория на техническом обслуживании — подтверждение невозможно.</p>
+        {% elif error == 'csrf' %}
+        <p class="banner-notice banner-notice--err">Сессия устарела или форма отправлена повторно. Обновите страницу и попробуйте снова.</p>
+        {% endif %}
+
+        {% if is_admin %}
+        <p class="admin-bookings-hint">Как администратор вы видите заявки всех преподавателей. Подтверждение переводит заявку в статус «подтверждена» и помечает аудиторию как занятую, пока действует бронь.</p>
+
+        <form class="bookings-filters" method="get" action="/bookings">
+            <div class="bookings-filters__row">
+                <label class="bookings-filters__field">
+                    <span class="bookings-filters__label">Статус</span>
+                    <select name="status">
+                        <option value="" {% if not filter_status %}selected{% endif %}>все</option>
+                        <option value="pending" {% if filter_status == 'pending' %}selected{% endif %}>на рассмотрении</option>
+                        <option value="confirmed" {% if filter_status == 'confirmed' %}selected{% endif %}>подтверждена</option>
+                        <option value="cancelled" {% if filter_status == 'cancelled' %}selected{% endif %}>отменена</option>
+                    </select>
+                </label>
+                <label class="bookings-filters__field">
+                    <span class="bookings-filters__label">Корпус</span>
+                    <select name="college_id">
+                        <option value="">все</option>
+                        {% for c in colleges %}
+                        <option value="{{ c.id }}" {% if filter_college_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="bookings-filters__field">
+                    <span class="bookings-filters__label">С даты</span>
+                    <input type="date" name="date_from" value="{{ filter_date_from }}">
+                </label>
+                <label class="bookings-filters__field">
+                    <span class="bookings-filters__label">По дату</span>
+                    <input type="date" name="date_to" value="{{ filter_date_to }}">
+                </label>
+                <label class="bookings-filters__field bookings-filters__field--grow">
+                    <span class="bookings-filters__label">Поиск (ФИО, email)</span>
+                    <input type="search" name="q" value="{{ filter_q }}" placeholder="Иванов…" autocomplete="off">
+                </label>
+            </div>
+            <div class="bookings-filters__actions">
+                <button type="submit" class="nav-cta">Применить</button>
+                <a href="/bookings" class="nav-cta nav-cta--ghost">Сбросить</a>
+                <a href="{{ export_csv_url }}" class="nav-cta nav-cta--ghost bookings-export-csv">Скачать CSV</a>
+            </div>
+        </form>
+        {% endif %}
+
+        <div class="bookings-wrap">
+            {% if bookings %}
+            <table class="bookings-table">
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>Корпус</th>
+                        <th>Аудитория</th>
+                        <th>Начало</th>
+                        <th>Окончание</th>
+                        <th>Статус</th>
+                        {% if is_admin %}<th>Кто подал</th>{% endif %}
+                        {% if is_admin %}<th>Подтвердил</th>{% endif %}
+                        <th class="bookings-actions-col">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bookings %}
+                    <tr>
+                        <td>{{ b.id }}</td>
+                        <td>{{ b.room.college.name }}</td>
+                        <td>№ {{ b.room.number }}</td>
+                        <td>{{ b.starts_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td>{{ b.ends_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td>
+                            {% if b.status == 'pending' %}
+                            <span class="badge-status badge-status--pending">на рассмотрении</span>
+                            {% elif b.status == 'confirmed' %}
+                            <span class="badge-status badge-status--confirmed">подтверждена</span>
+                            {% else %}
+                            <span class="badge-status badge-status--cancelled">отменена</span>
+                            {% endif %}
+                        </td>
+                        {% if is_admin %}<td>{{ b.user.full_name }}<br><span class="muted" style="font-size:0.85rem;">{{ b.user.email }}</span></td>{% endif %}
+                        {% if is_admin %}
+                        <td class="bookings-review-cell">
+                            {% if b.status == 'confirmed' and b.reviewed_at %}
+                            <span class="bookings-review-name">{{ b.reviewer.full_name if b.reviewer else '—' }}</span>
+                            <br><span class="muted" style="font-size:0.85rem;">{{ b.reviewed_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                            {% elif b.status == 'confirmed' %}
+                            <span class="muted">нет записи</span>
+                            {% else %}
+                            <span class="muted">—</span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                        <td class="bookings-actions-cell">
+                            <div class="bookings-action-row">
+                                {% if is_admin and b.status == 'pending' %}
+                                <form method="post" action="/bookings/{{ b.id }}/confirm" class="inline-form">
+                                    {{ csrf_field(request) }}
+                                    {% if filter_return_qs %}<input type="hidden" name="return_qs" value="{{ filter_return_qs }}">{% endif %}
+                                    <button type="submit" class="btn-confirm">Подтвердить</button>
+                                </form>
+                                {% endif %}
+                                {% if b.status != 'cancelled' and (is_admin or b.user_id == user.id) %}
+                                <form method="post" action="/bookings/{{ b.id }}/cancel" class="inline-form">
+                                    {{ csrf_field(request) }}
+                                    {% if filter_return_qs %}<input type="hidden" name="return_qs" value="{{ filter_return_qs }}">{% endif %}
+                                    <button type="submit" class="btn-secondary btn-sm">{% if is_admin and b.status == 'pending' %}Отклонить{% else %}Отменить{% endif %}</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="muted">Пока нет заявок. Забронируйте аудиторию на карте колледжа.</p>
+            {% endif %}
+
+            {% if total_pages > 1 %}
+            <nav class="bookings-pagination" aria-label="Страницы списка">
+                {% if pagination_prev_url %}
+                <a href="{{ pagination_prev_url }}" class="nav-cta nav-cta--ghost">← Назад</a>
+                {% else %}
+                <span class="bookings-pagination__spacer"></span>
+                {% endif %}
+                <span class="bookings-pagination__status muted">Страница {{ page }} из {{ total_pages }} · записей: {{ total_count }}</span>
+                {% if pagination_next_url %}
+                <a href="{{ pagination_next_url }}" class="nav-cta nav-cta--ghost">Вперёд →</a>
+                {% else %}
+                <span class="bookings-pagination__spacer"></span>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </main>
+</body>
+</html>

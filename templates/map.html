@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/static/style.css">
+    <title>Карта</title>
+</head>
+<body style="text-align:center;">
+    <h1>План 1-го этажа</h1>
+    <div class="map-container">
+        <img src="https://freepik.com" style="max-width:800px;">
+        
+        {% for room in rooms %}
+        <div class="room-point" style="left: {{ room.pos_x }}%; top: {{ room.pos_y }}%;" onclick="alert('Бронь {{ room.number }}')">
+            {{ room.number }}
+        </div>
+        {% endfor %}
+
+    </div>
+    <br>
+    <a href="/" class="btn-book" style="text-decoration:none; padding: 10px 20px;">Вернуться назад</a>
+</body>
+</html>

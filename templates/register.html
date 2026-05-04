@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Регистрация персонала</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+</head>
+<body class="page-auth">
+    <div class="auth-shell">
+        <a href="/" class="auth-back">← На главную</a>
+        <div class="auth-card">
+            <h1>Регистрация</h1>
+            <p class="auth-hint">Аккаунт сохраняется в базе данных. Студентам регистрация не нужна.</p>
+            {% if error == 'exists' %}
+            <p class="form-error">Пользователь с таким email уже есть. <a href="/login">Войти</a></p>
+            {% elif error == 'weak_password' %}
+            <p class="form-error">Пароль не короче 6 символов.</p>
+            {% elif error == 'invalid_role' %}
+            <p class="form-error">Выберите корректную роль.</p>
+            {% elif error == 'csrf' %}
+            <p class="form-error">Сессия устарела. Обновите страницу и отправьте форму снова.</p>
+            {% endif %}
+            <form action="/register" method="post" class="auth-form">
+                {{ csrf_field(request) }}
+                <label class="field">
+                    <span>ФИО</span>
+                    <input type="text" name="full_name" required autocomplete="name" class="input">
+                </label>
+                <label class="field">
+                    <span>Email</span>
+                    <input type="email" name="email" required autocomplete="email" class="input">
+                </label>
+                <label class="field">
+                    <span>Пароль</span>
+                    <input type="password" name="password" required autocomplete="new-password" minlength="6" class="input">
+                </label>
+                <label class="field">
+                    <span>Роль</span>
+                    <select name="role" class="input" required>
+                        <option value="" disabled selected>Выберите роль</option>
+                        <option value="teacher">Преподаватель</option>
+                        <option value="admin">Администратор (диспетчер)</option>
+                        <option value="tech_staff">Технический персонал</option>
+                    </select>
+                </label>
+                <button type="submit" class="btn-primary btn-full">Создать аккаунт</button>
+            </form>
+            <p class="auth-hint" style="margin-top:16px; margin-bottom:0;">Уже есть аккаунт? <a href="/login">Вход</a></p>
+        </div>
+    </div>
+</body>
+</html>

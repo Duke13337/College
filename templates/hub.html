@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Бронирование аудиторий — Единый портал</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+</head>
+<body class="page-landing">
+    <header class="site-header">
+        <a href="/" class="brand">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span class="brand-text">EduSpace</span>
+        </a>
+        <nav class="site-nav" aria-label="Основное меню">
+            <a href="#colleges">Колледжи</a>
+            {% if user %}
+                <a href="/bookings">Заявки</a>
+                <span class="nav-user">{{ user.name }}</span>
+                <a href="/logout" class="nav-cta nav-cta--ghost">Выйти</a>
+            {% else %}
+                <a href="/login" class="nav-cta">Вход для персонала</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero-landing">
+            <div class="hero-grid">
+                <div class="hero-copy">
+                    <p class="eyebrow">Один портал — все корпуса</p>
+                    <h1>Бронирование аудиторий без очередей и звонков</h1>
+                    <p class="lead">
+                        Выберите учебное заведение, откройте план этажа и посмотрите свободные кабинеты.
+                        Просмотр карты и статусов доступен сразу; для оформления заявки на бронь персоналу
+                        нужен вход (ссылка в шапке).
+                    </p>
+                    <div class="hero-actions">
+                        <a href="#colleges" class="btn-primary">Выбрать колледж</a>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <a href="#colleges" class="hero-card hero-card--main hero-card--peek">
+                        <div class="mini-map" aria-hidden="true">
+                            <span class="pin" style="left:22%;top:38%"></span>
+                            <span class="pin" style="left:55%;top:52%"></span>
+                            <span class="pin pin--pulse" style="left:72%;top:28%"></span>
+                        </div>
+                        <p class="hero-card-title">План этажа</p>
+                        <p class="hero-card-sub">Здесь — пример оформления. Настоящая карта открывается внутри выбранного колледжа: маркер аудитории → описание и заявка (после входа персонала).</p>
+                        <p class="hero-card-hint">Нажмите карточку, чтобы перейти к колледжам ↓</p>
+                    </a>
+                    <div class="hero-card hero-card--float" aria-hidden="true">
+                        <p class="badge-soft">Статус</p>
+                        <p class="float-line"><span class="dot dot--ok"></span> Ауд. 202 — свободна</p>
+                        <p class="float-line"><span class="dot dot--warn"></span> Ауд. 105 — обслуживание</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="colleges" class="section-block">
+            <div class="section-inner">
+                <h2 class="section-heading">Колледжи</h2>
+                <p class="section-lead">Перейдите в корпус, чтобы открыть карту с кабинетами.</p>
+                <div class="college-grid">
+                    {% for college in colleges %}
+                    <article class="college-card">
+                        <a href="/college/{{ college.id }}" class="college-card-link">
+                            <div class="college-media">
+                                <img src="{{ college.image_url }}" alt="" loading="lazy">
+                            </div>
+                            <div class="college-body">
+                                <h3>{{ college.name }}</h3>
+                                <p class="college-address">{{ college.address }}</p>
+                                <span class="college-more">Открыть план этажа →</span>
+                            </div>
+                        </a>
+                    </article>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <p><strong>EduSpace</strong> — демо-портал бронирования учебных помещений.</p>
+            <p class="footer-note">Данные и брони на странице учебные; интеграции с расписанием можно подключить позже.</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<div class="floor-plan-layer floor-plan-layer--polytech" aria-hidden="true">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" class="floor-plan-svg">
+        <defs>
+            <linearGradient id="fp_pt_bg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#e9eef6"/>
+                <stop offset="1" stop-color="#dce6f2"/>
+            </linearGradient>
+            <linearGradient id="fp_pt_wall" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#274c77"/>
+                <stop offset="1" stop-color="#1b263b"/>
+            </linearGradient>
+            <filter id="fp_pt_sh" x="-15%" y="-15%" width="130%" height="130%">
+                <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#14213d" flood-opacity="0.18"/>
+            </filter>
+        </defs>
+        <rect width="100" height="100" fill="url(#fp_pt_bg)"/>
+        <g opacity="0.35" stroke="#a8b8cc" stroke-width="0.08" fill="none">
+            <path d="M8 0 V100 M16 0 V100 M24 0 V100 M32 0 V100 M40 0 V100 M48 0 V100 M56 0 V100 M64 0 V100 M72 0 V100 M80 0 V100 M88 0 V100 M92 0 V100"/>
+            <path d="M0 8 H100 M0 16 H100 M0 24 H100 M0 32 H100 M0 40 H100 M0 48 H100 M0 56 H100 M0 64 H100 M0 72 H100 M0 80 H100 M0 88 H100"/>
+        </g>
+        <!-- Корпус Г — главный контур -->
+        <path d="M6 6 H94 V94 H6 Z" fill="#f8fafc" stroke="url(#fp_pt_wall)" stroke-width="1.2" filter="url(#fp_pt_sh)" stroke-linejoin="round"/>
+        <!-- Коридор горизонтальный -->
+        <rect x="9" y="39" width="82" height="13" rx="0.5" fill="#cfd9e8" stroke="#274c77" stroke-width="0.5"/>
+        <text x="50" y="46.5" text-anchor="middle" font-size="3.2" fill="#415a77" font-family="system-ui,sans-serif" font-weight="600">центральный коридор</text>
+        <!-- Лестница блок -->
+        <rect x="34" y="9" width="32" height="28" rx="0.5" fill="#e8edf5" stroke="#274c77" stroke-width="0.55"/>
+        <text x="50" y="23" text-anchor="middle" font-size="2.8" fill="#6c7a8f" font-family="system-ui,sans-serif">лестница · лифт · вход</text>
+        <!-- Поточные зоны (не бронируются) -->
+        <rect x="9" y="9" width="23" height="28" fill="#dde6f2" stroke="#274c77" stroke-width="0.45" opacity="0.95"/>
+        <text x="20.5" y="25" text-anchor="middle" font-size="2.6" fill="#5c6b7f" font-family="system-ui,sans-serif">архив</text>
+        <rect x="68" y="9" width="23" height="28" fill="#dde6f2" stroke="#274c77" stroke-width="0.45" opacity="0.95"/>
+        <text x="79.5" y="25" text-anchor="middle" font-size="2.6" fill="#5c6b7f" font-family="system-ui,sans-serif">учебная часть</text>
+        <rect x="9" y="54" width="28" height="37" fill="#e4eaf4" stroke="#274c77" stroke-width="0.45"/>
+        <rect x="39" y="54" width="22" height="37" fill="#e4eaf4" stroke="#274c77" stroke-width="0.45"/>
+        <rect x="63" y="54" width="28" height="37" fill="#edf1f8" stroke="#274c77" stroke-width="0.45"/>
+        <text x="77" y="74" text-anchor="middle" font-size="2.6" fill="#7d8c9c" font-family="system-ui,sans-serif">склад</text>
+        <!-- Перегородки -->
+        <line x1="33" y1="9" x2="33" y2="37" stroke="#274c77" stroke-width="0.5"/>
+        <line x1="67" y1="9" x2="67" y2="37" stroke="#274c77" stroke-width="0.5"/>
+        <line x1="37" y1="54" x2="37" y2="91" stroke="#274c77" stroke-width="0.5"/>
+        <line x1="63" y1="54" x2="63" y2="91" stroke="#274c77" stroke-width="0.5"/>
+        <line x1="9" y1="37" x2="91" y2="37" stroke="#274c77" stroke-width="0.5"/>
+        <line x1="9" y1="52" x2="91" y2="52" stroke="#274c77" stroke-width="0.5"/>
+        <text x="50" y="97" text-anchor="middle" font-size="2.6" fill="#8a9aaa" font-family="system-ui,sans-serif">Политех · корпус Г · схема этажа</text>
+    </svg>
+</div>

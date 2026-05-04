@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ college.name }} — план этажа</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+</head>
+<body class="page-college">
+    <header class="site-header site-header--compact">
+        <a href="/" class="brand">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span class="brand-text">EduSpace</span>
+        </a>
+        <div class="header-college-title">{{ college.name }}</div>
+        <div class="header-actions">
+            {% if user %}
+                <span class="nav-user">{{ user.name }} ·
+                    {% if role == 'admin' %}Администратор
+                    {% elif role == 'teacher' %}Преподаватель
+                    {% elif role == 'tech_staff' %}Техслужба
+                    {% else %}{{ role }}{% endif %}
+                </span>
+                <a href="/bookings" class="nav-cta nav-cta--ghost">Заявки</a>
+                <a href="/logout" class="nav-cta nav-cta--ghost">Выйти</a>
+            {% else %}
+                <span class="guest-badge">Гость — только просмотр</span>
+                <a href="/login?next=/college/{{ college.id }}" class="nav-cta">Вход для персонала</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="college-main">
+        {% if notice == 'book_saved' %}
+        <p class="banner-notice banner-notice--ok">Заявка сохранена в базе (статус «pending»){% if booking_id %}, номер {{ booking_id }}{% endif %}. Список заявок — в разделе «Заявки».</p>
+        {% elif notice == 'maintenance_updated' %}
+        <p class="banner-notice banner-notice--ok">Статус аудитории обновлён.</p>
+        {% endif %}
+        {% if error == 'need_staff_login' %}
+        <p class="banner-notice banner-notice--err">Чтобы бронировать, войдите как преподаватель или администратор.</p>
+        {% elif error == 'room_maintenance' %}
+        <p class="banner-notice banner-notice--err">Аудитория на техническом обслуживании, бронь недоступна.</p>
+        {% elif error == 'room_occupied' %}
+        <p class="banner-notice banner-notice--err">Аудитория занята в этом интервале (демо-статус). Выберите другую или другое время.</p>
+        {% elif error == 'bad_slot' %}
+        <p class="banner-notice banner-notice--err">Укажите корректное начало и конец интервала (конец позже начала).</p>
+        {% elif error == 'slot_overlap' %}
+        <p class="banner-notice banner-notice--err">На это время уже есть другая заявка по этой аудитории. Выберите другой слот.</p>
+        {% elif error == 'csrf' %}
+        <p class="banner-notice banner-notice--err">Сессия устарела. Обновите страницу и отправьте форму снова.</p>
+        {% endif %}
+
+        <div class="college-layout">
+            <section class="map-section" aria-labelledby="map-heading">
+                <div class="map-section-head">
+                    <h1 id="map-heading" class="map-title">План этажа</h1>
+                    <p class="map-sub">
+                        У каждого колледжа свой план этажа. Подсветка зон показывает статус аудитории:
+                        <strong>зелёный</strong> — свободна для брони,
+                        <strong>коралловый</strong> — занята (демо),
+                        <strong>янтарь</strong> — техническое обслуживание.
+                    </p>
+                </div>
+                <div class="floor-map floor-map--large" id="floor-map" role="application" aria-label="Схема этажа с аудиториями">
+                    <div class="floor-map-inner">
+                        {# Квадратный холст = система координат SVG (viewBox 0 0 100 100), без «полей» от object-fit #}
+                        <div class="floor-map-canvas">
+                            {% include 'partials/floor_' ~ floor_plan_key ~ '.html' %}
+                            {% for room in rooms %}
+                            {% set st = (room.room_status or 'available')|lower %}
+                            <div
+                                class="room-zone room-zone--{{ st }}"
+                                style="left: {{ room.pos_x }}%; top: {{ room.pos_y }}%; width: {{ room.zone_w or 14 }}%; height: {{ room.zone_h or 20 }}%;"
+                                aria-hidden="true"
+                            ></div>
+                            {% endfor %}
+                            {% for room in rooms %}
+                            {% set st = (room.room_status or 'available')|lower %}
+                            <button
+                                type="button"
+                                class="map-pin map-pin--{{ st }}"
+                                style="left: {{ room.pos_x }}%; top: {{ room.pos_y }}%;"
+                                data-room-id="{{ room.id }}"
+                                aria-label="Аудитория {{ room.number }}, {{ st }}"
+                            >{{ room.number }}</button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <ul class="map-legend map-legend--rich">
+                    <li><span class="legend-dot legend-dot--free"></span> свободна</li>
+                    <li><span class="legend-dot legend-dot--busy"></span> занята</li>
+                    <li><span class="legend-dot legend-dot--maint"></span> техобслуживание</li>
+                </ul>
+            </section>
+
+            <aside class="room-panel" id="room-panel" aria-live="polite">
+                <p class="room-panel-placeholder" id="room-panel-placeholder">
+                    Выберите кабинет на схеме — справа появятся детали.
+                </p>
+                <div class="room-panel-body hidden" id="room-panel-body">
+                    <p class="panel-eyebrow">Аудитория</p>
+                    <h2 class="panel-title" id="panel-number"></h2>
+                    <p class="panel-desc" id="panel-desc"></p>
+                    <p class="panel-meta"><span id="panel-cap"></span></p>
+                    <p class="panel-status-line hidden" id="panel-status-line" role="status"></p>
+
+                    <div class="panel-actions" id="panel-actions-guest">
+                        <p class="muted">Режим гостя: просмотр карты и статусов. Бронирование недоступно.</p>
+                    </div>
+
+                    {% if can_book %}
+                    <form class="panel-form hidden" id="panel-form-book" method="post" action="">
+                        {{ csrf_field(request) }}
+                        <p class="slot-hint">Дата и время через календарь и часы браузера — произвольный текст не принимается.</p>
+                        <p class="slot-group-title">Начало</p>
+                        <div class="slot-field-grid">
+                            <label class="field">
+                                <span>Дата</span>
+                                <input type="date" name="date_start" required autocomplete="off" min="{{ today_iso }}" max="{{ max_book_iso }}" class="input">
+                            </label>
+                            <label class="field">
+                                <span>Время</span>
+                                <input type="time" name="time_start" required step="60" class="input">
+                            </label>
+                        </div>
+                        <p class="slot-group-title">Окончание</p>
+                        <div class="slot-field-grid">
+                            <label class="field">
+                                <span>Дата</span>
+                                <input type="date" name="date_end" required autocomplete="off" min="{{ today_iso }}" max="{{ max_book_iso }}" class="input">
+                            </label>
+                            <label class="field">
+                                <span>Время</span>
+                                <input type="time" name="time_end" required step="60" class="input">
+                            </label>
+                        </div>
+                        <button type="submit" class="btn-primary btn-full">Отправить заявку на бронь</button>
+                    </form>
+                    {% endif %}
+
+                    {% if can_manage_maintenance %}
+                    <form class="panel-form panel-form--tight hidden" id="panel-form-maint" method="post" action="">
+                        {{ csrf_field(request) }}
+                        <input type="hidden" name="under_maintenance" id="maint-value" value="0">
+                        <button type="submit" class="btn-secondary btn-full" id="maint-btn"></button>
+                    </form>
+                    {% endif %}
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script type="application/json" id="rooms-json">{{ rooms_json | safe }}</script>
+    <script>
+    (function() {
+        const dataEl = document.getElementById('rooms-json');
+        let roomsData = [];
+        try { roomsData = JSON.parse(dataEl.textContent); } catch (e) {}
+
+        const canBook = {{ can_book | tojson }};
+        const canMaint = {{ can_manage_maintenance | tojson }};
+        const collegeId = {{ college.id }};
+
+        const placeholder = document.getElementById('room-panel-placeholder');
+        const bodyEl = document.getElementById('room-panel-body');
+        const panelNumber = document.getElementById('panel-number');
+        const panelDesc = document.getElementById('panel-desc');
+        const panelCap = document.getElementById('panel-cap');
+        const panelStatusLine = document.getElementById('panel-status-line');
+        const STATUS_CLASS = ['panel-status-line--available', 'panel-status-line--occupied', 'panel-status-line--maintenance'];
+        const STATUS_TEXT = {
+            available: 'Статус: свободна — можно отправить заявку.',
+            occupied: 'Статус: занята (демо: занятость или занятие). Бронь с страницы недоступна.',
+            maintenance: 'Статус: техническое обслуживание — бронь недоступна.'
+        };
+        const panelGuest = document.getElementById('panel-actions-guest');
+        const formBook = document.getElementById('panel-form-book');
+        const formMaint = document.getElementById('panel-form-maint');
+        const maintBtn = document.getElementById('maint-btn');
+        const maintHidden = document.getElementById('maint-value');
+
+        let selectedId = null;
+
+        function roomById(id) {
+            return roomsData.find(r => r.id === id);
+        }
+
+        function selectRoom(id) {
+            selectedId = id;
+            const r = roomById(id);
+            if (!r) return;
+
+            document.querySelectorAll('.map-pin').forEach(el => {
+                el.classList.toggle('map-pin--active', String(el.dataset.roomId) === String(id));
+            });
+
+            placeholder.classList.add('hidden');
+            bodyEl.classList.remove('hidden');
+            panelNumber.textContent = '№ ' + r.number;
+            panelDesc.textContent = r.description || '';
+            panelCap.textContent = 'Вместимость: ' + r.capacity + ' мест';
+
+            const st = (r.room_status || 'available').toLowerCase();
+            if (panelStatusLine) {
+                STATUS_CLASS.forEach(function(c) { panelStatusLine.classList.remove(c); });
+                panelStatusLine.classList.remove('hidden');
+                var sk = ['available', 'occupied', 'maintenance'].indexOf(st) >= 0 ? st : 'available';
+                panelStatusLine.classList.add('panel-status-line--' + sk);
+                panelStatusLine.textContent = STATUS_TEXT[sk] || STATUS_TEXT.available;
+            }
+
+            if (!canBook && !canMaint) {
+                panelGuest.classList.remove('hidden');
+            } else {
+                panelGuest.classList.add('hidden');
+            }
+
+            if (formBook) {
+                const okBook = canBook && st === 'available';
+                if (okBook) {
+                    formBook.classList.remove('hidden');
+                    formBook.action = '/college/' + collegeId + '/room/' + r.id + '/book-request';
+                } else {
+                    formBook.classList.add('hidden');
+                }
+            }
+
+            if (formMaint && maintBtn && maintHidden) {
+                formMaint.classList.remove('hidden');
+                formMaint.action = '/college/' + collegeId + '/room/' + r.id + '/maintenance';
+                if (st === 'maintenance' || r.is_under_maintenance) {
+                    maintHidden.value = '0';
+                    maintBtn.textContent = 'Снять режим техобслуживания';
+                } else {
+                    maintHidden.value = '1';
+                    maintBtn.textContent = 'Поставить на техобслуживание';
+                }
+            }
+        }
+
+        document.querySelectorAll('.map-pin').forEach(btn => {
+            btn.addEventListener('click', () => selectRoom(Number(btn.dataset.roomId)));
+        });
+
+        function wireBookingForm(form) {
+            if (!form || form.dataset.wired === '1') return;
+            form.dataset.wired = '1';
+            var ds = form.querySelector('[name="date_start"]');
+            var de = form.querySelector('[name="date_end"]');
+            var ts = form.querySelector('[name="time_start"]');
+            var te = form.querySelector('[name="time_end"]');
+            function syncEndMin() {
+                if (ds && de && ds.value) de.min = ds.value;
+            }
+            if (ds) ds.addEventListener('change', syncEndMin);
+            form.addEventListener('submit', function(ev) {
+                if (!ds || !de || !ts || !te) return;
+                if (!ds.value || !de.value || ts.value === '' || te.value === '') return;
+                var startMs = Date.parse(ds.value + 'T' + ts.value);
+                var endMs = Date.parse(de.value + 'T' + te.value);
+                if (isNaN(startMs) || isNaN(endMs) || startMs >= endMs) {
+                    ev.preventDefault();
+                    alert('Проверьте интервал: окончание должно быть позже начала.');
+                }
+            });
+            syncEndMin();
+        }
+        wireBookingForm(formBook);
+    })();
+    </script>
+</body>
+</html>

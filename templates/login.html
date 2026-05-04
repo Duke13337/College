@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Вход для персонала</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+</head>
+<body class="page-auth">
+    <div class="auth-shell">
+        <a href="/" class="auth-back">← На главную</a>
+        <div class="auth-card">
+            <h1>Вход для персонала</h1>
+            <p class="auth-hint">Студентам и гостям вход не нужен. Используйте email и пароль учётной записи из базы.</p>
+            {% if error == 'bad_credentials' %}
+            <p class="form-error">Неверный email или пароль.</p>
+            {% elif error == 'forbidden_role' %}
+            <p class="form-error">Эта учётная запись не входит в роли персонала.</p>
+            {% elif error == 'csrf' %}
+            <p class="form-error">Сессия устарела. Попробуйте войти снова.</p>
+            {% endif %}
+            <form action="/login" method="post" class="auth-form">
+                {{ csrf_field(request) }}
+                {% if next_url %}
+                <input type="hidden" name="next_url" value="{{ next_url }}">
+                {% endif %}
+                <label class="field">
+                    <span>Email</span>
+                    <input type="email" name="email" required autocomplete="email" class="input">
+                </label>
+                <label class="field">
+                    <span>Пароль</span>
+                    <input type="password" name="password" required autocomplete="current-password" class="input">
+                </label>
+                <button type="submit" class="btn-primary btn-full">Войти</button>
+            </form>
+            <p class="auth-hint" style="margin-top:16px; margin-bottom:0;">Нет аккаунта? <a href="/register">Регистрация</a></p>
+        </div>
+    </div>
+</body>
+</html>
