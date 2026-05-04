@@ -21,7 +21,6 @@
 ## 🛠️ Стек технологий
 *   **Бэкенд:** FastAPI, SQLAlchemy (SQLite)
 *   **Фронтенд:** HTML5, CSS3 (Grid/Flexbox), Jinja2
-*   **Деплой:** Vercel
 
 ---
 
